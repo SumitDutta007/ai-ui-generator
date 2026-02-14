@@ -62,22 +62,23 @@ export default function ChatPanel() {
 
       const result = await response.json();
 
+      // Handle validation errors specially - show in chat but don't update code
+      if (result.validationError) {
+        addMessage({
+          role: "assistant",
+          content: result.explanation || `⚠️ Validation Error: ${result.errors?.join(", ")}`,
+        });
+        // Note: We don't update the code, so the preview stays unchanged
+        // Don't create checkpoint for validation errors
+        return;
+      }
+
       if (result.success) {
         // Add AI response
         addMessage({
           role: "assistant",
           content: result.explanation,
         });
-
-        // Handle validation errors specially - show in chat but don't update code
-        if (result.validationError) {
-          addMessage({
-            role: "assistant",
-            content: result.explanation || `⚠️ Validation Error: ${result.errors?.join(", ")}`,
-          });
-          // Note: We don't update the code, so the preview stays unchanged
-          return;
-        }
 
         // Update code only if validation passed
         useAppStore.getState().setCode(result.code, false);
