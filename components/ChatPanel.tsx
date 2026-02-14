@@ -69,7 +69,17 @@ export default function ChatPanel() {
           content: result.explanation,
         });
 
-        // Update code
+        // Handle validation errors specially - show in chat but don't update code
+        if (result.validationError) {
+          addMessage({
+            role: "assistant",
+            content: result.explanation || `⚠️ Validation Error: ${result.errors?.join(", ")}`,
+          });
+          // Note: We don't update the code, so the preview stays unchanged
+          return;
+        }
+
+        // Update code only if validation passed
         useAppStore.getState().setCode(result.code, false);
 
         // Create checkpoint if requested
@@ -93,16 +103,20 @@ export default function ChatPanel() {
           await useAppStore.getState().addCheckpoint(checkpoint);
         }
       } else {
+        // Handle general errors (show explanation if available, otherwise show raw error)
         addMessage({
           role: "assistant",
-          content: `❌ Error: ${result.errors?.[0] || result.error || "Generation failed"}`,
+          content: result.explanation || `❌ Error: ${result.errors?.[0] || result.error || "Generation failed"}`,
         });
+        // Don't update code on error - preview stays unchanged
       }
-    } catch (error) {
+    } catch {
+      // Network or API error
       addMessage({
         role: "assistant",
-        content: `❌ Failed to generate UI: ${error instanceof Error ? error.message : "Unknown error"}`,
+        content: `❌ **Connection Error**\n\nFailed to communicate with the AI service.\n\n💡 **Please check:**\n- Your internet connection\n- Groq API status\n- Rate limits (100K tokens/day for free tier)`,
       });
+      // Don't update code on error - preview stays unchanged
     } finally {
       useAppStore.getState().setIsGenerating(false);
     }
@@ -192,12 +206,36 @@ export default function ChatPanel() {
                       ? "bg-linear-to-br from-blue-600 via-blue-500 to-purple-600 text-white shadow-blue-500/30 border-blue-400/20"
                       : message.role === "system"
                         ? "bg-black/80 border-white/20 text-gray-200 italic"
-                        : "bg-black/80 border-white/20 text-white"
+                        : message.content.includes("❌") || message.content.includes("⚠️")
+                          ? "bg-red-950/40 border-red-500/30 text-red-100 shadow-red-500/20"
+                          : "bg-black/80 border-white/20 text-white"
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed font-medium">
-                    {message.content}
-                  </p>
+                  <div className="text-sm whitespace-pre-wrap leading-relaxed font-medium prose prose-invert prose-sm max-w-none">
+                    {/* Render markdown-style formatting */}
+                    {message.content.split('\n').map((line, i) => {
+                      if (line.startsWith('**') && line.endsWith('**')) {
+                        return <p key={i} className="font-bold text-base my-2">{line.replace(/\*\*/g, '')}</p>;
+                      } else if (line.startsWith('---')) {
+                        return <hr key={i} className="my-4 border-white/20" />;
+                      } else if (line.startsWith('- ')) {
+                        return <p key={i} className="ml-4 my-1">{line}</p>;
+                      } else if (line.includes('`') && !line.startsWith('```')) {
+                        const parts = line.split('`');
+                        return (
+                          <p key={i} className="my-1">
+                            {parts.map((part, j) => 
+                              j % 2 === 1 ? <code key={j} className="bg-white/10 px-2 py-0.5 rounded text-blue-300">{part}</code> : part
+                            )}
+                          </p>
+                        );
+                      } else if (line.trim()) {
+                        return <p key={i} className="my-1">{line}</p>;
+                      } else {
+                        return <br key={i} />;
+                      }
+                    })}
+                  </div>
                   <p
                     className={`text-xs mt-2 font-semibold ${
                       message.role === "user"

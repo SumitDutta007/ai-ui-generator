@@ -71,6 +71,7 @@ export interface GenerationResponse {
   explanation: string;
   checkpointLabel: string;
   success: boolean;
+  validationError?: boolean; // Flag to indicate validation error (show in chat, don't break preview)
   errors?: string[];
 }
 

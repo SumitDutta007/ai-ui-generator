@@ -15,6 +15,47 @@ import {
 import { AgentStep, ComponentPlan, GenerationResponse } from "./types";
 import { validateGeneratedCode } from "./validator";
 
+// Helper function to format validation errors for user display
+function formatValidationError(errors: string[], userIntent: string): string {
+  const errorMessages: string[] = [];
+
+  errors.forEach((error) => {
+    if (error.includes("Inline styles")) {
+      errorMessages.push(
+        "❌ **Inline Styles Not Allowed**\n\n" +
+        "I cannot create components with inline `style={{...}}` attributes. " +
+        "All styling must use the pre-defined Tailwind classes built into our fixed component library.\n\n" +
+        "💡 **Why?** This ensures visual consistency across all generated UIs."
+      );
+    } else if (error.includes("Unauthorized components")) {
+      const match = error.match(/Unauthorized components used: (.+)/);
+      const components = match ? match[1] : "some components";
+      errorMessages.push(
+        `❌ **Component Not Available**\n\n` +
+        `I cannot use \`${components}\` because they're not in our fixed component library.\n\n` +
+        `✅ **Available components include:**\n` +
+        `- Layout: Container, Grid, Flex, Card\n` +
+        `- Input: Button, Input, Select, Checkbox\n` +
+        `- Display: Text, Heading, Badge, Alert, Avatar\n` +
+        `- Data: Table, ProgressBar, Stat, Metric\n` +
+        `- Charts: BarChart, LineChart, PieChart, AreaChart\n\n` +
+        `💡 **Try rephrasing:** "${userIntent}" using these components.`
+      );
+    } else if (error.includes("Arbitrary Tailwind")) {
+      errorMessages.push(
+        "❌ **Custom Tailwind Values Not Allowed**\n\n" +
+        "I cannot use arbitrary Tailwind values like `bg-[#ff0000]` or `text-[20px]`. " +
+        "Only standard Tailwind classes from our component library are permitted.\n\n" +
+        "💡 **Why?** This maintains a consistent design system."
+      );
+    } else {
+      errorMessages.push(`❌ **Validation Error**\n\n${error}`);
+    }
+  });
+
+  return errorMessages.join("\n\n---\n\n");
+}
+
 export interface OrchestrationResult extends GenerationResponse {
   steps: AgentStep[];
   totalDurationMs: number;
@@ -117,9 +158,25 @@ Generate the corrected code now (NO style attributes allowed):`;
     }
 
     if (!validation.valid) {
-      throw new Error(
-        `Validation failed after ${maxRetries} retries: ${validation.errors.join(", ")}`,
-      );
+      // Instead of throwing, return a user-friendly error that can be displayed in chat
+      // Keep the previous working code in preview
+      const userFriendlyError = formatValidationError(validation.errors, userIntent);
+      
+      return {
+        plan: {
+          layout: { type: "error", structure: "Validation failed" },
+          components: [],
+          dataFlow: "Error",
+        },
+        code: currentCode || "", // Keep existing code if available
+        explanation: userFriendlyError,
+        checkpointLabel: "Validation Error",
+        success: false,
+        validationError: true, // Flag to indicate this is a validation error
+        errors: validation.errors,
+        steps,
+        totalDurationMs: Date.now() - startTime,
+      };
     }
 
     // Step 4: EXPLAINER AGENT
@@ -164,17 +221,29 @@ Generate the corrected code now (NO style attributes allowed):`;
   } catch (error) {
     console.error("❌ Generation failed:", error);
 
+    // Format user-friendly error message
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const userFriendlyMessage = 
+      `❌ **Generation Error**\n\n` +
+      `I encountered an issue while generating your UI:\n\n` +
+      `${errorMessage}\n\n` +
+      `💡 **Try:**\n` +
+      `- Simplifying your request\n` +
+      `- Being more specific about what you want\n` +
+      `- Breaking down complex requests into smaller steps`;
+
     return {
       plan: {
         layout: { type: "error", structure: "Error occurred" },
         components: [],
         dataFlow: "Error",
       },
-      code: "",
-      explanation: "",
+      code: currentCode || "", // Keep existing code to preserve preview
+      explanation: userFriendlyMessage,
       checkpointLabel: "Error",
       success: false,
-      errors: [error instanceof Error ? error.message : "Unknown error"],
+      validationError: false, // This is a generation error, not validation
+      errors: [errorMessage],
       steps,
       totalDurationMs: Date.now() - startTime,
     };
