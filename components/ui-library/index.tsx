@@ -67,9 +67,7 @@ export function Grid({
   };
 
   return (
-    <div
-      className={`grid ${colClasses[cols]} ${gapClasses[gap]} ${className}`}
-    >
+    <div className={`grid ${colClasses[cols]} ${gapClasses[gap]} ${className}`}>
       {children}
     </div>
   );

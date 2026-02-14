@@ -66,7 +66,9 @@ export default function ChatPanel() {
       if (result.validationError) {
         addMessage({
           role: "assistant",
-          content: result.explanation || `⚠️ Validation Error: ${result.errors?.join(", ")}`,
+          content:
+            result.explanation ||
+            `⚠️ Validation Error: ${result.errors?.join(", ")}`,
         });
         // Note: We don't update the code, so the preview stays unchanged
         // Don't create checkpoint for validation errors
@@ -107,7 +109,9 @@ export default function ChatPanel() {
         // Handle general errors (show explanation if available, otherwise show raw error)
         addMessage({
           role: "assistant",
-          content: result.explanation || `❌ Error: ${result.errors?.[0] || result.error || "Generation failed"}`,
+          content:
+            result.explanation ||
+            `❌ Error: ${result.errors?.[0] || result.error || "Generation failed"}`,
         });
         // Don't update code on error - preview stays unchanged
       }
@@ -207,31 +211,56 @@ export default function ChatPanel() {
                       ? "bg-linear-to-br from-blue-600 via-blue-500 to-purple-600 text-white shadow-blue-500/30 border-blue-400/20"
                       : message.role === "system"
                         ? "bg-black/80 border-white/20 text-gray-200 italic"
-                        : message.content.includes("❌") || message.content.includes("⚠️")
+                        : message.content.includes("❌") ||
+                            message.content.includes("⚠️")
                           ? "bg-red-950/40 border-red-500/30 text-red-100 shadow-red-500/20"
                           : "bg-black/80 border-white/20 text-white"
                   }`}
                 >
                   <div className="text-sm whitespace-pre-wrap leading-relaxed font-medium prose prose-invert prose-sm max-w-none">
                     {/* Render markdown-style formatting */}
-                    {message.content.split('\n').map((line, i) => {
-                      if (line.startsWith('**') && line.endsWith('**')) {
-                        return <p key={i} className="font-bold text-base my-2">{line.replace(/\*\*/g, '')}</p>;
-                      } else if (line.startsWith('---')) {
+                    {message.content.split("\n").map((line, i) => {
+                      if (line.startsWith("**") && line.endsWith("**")) {
+                        return (
+                          <p key={i} className="font-bold text-base my-2">
+                            {line.replace(/\*\*/g, "")}
+                          </p>
+                        );
+                      } else if (line.startsWith("---")) {
                         return <hr key={i} className="my-4 border-white/20" />;
-                      } else if (line.startsWith('- ')) {
-                        return <p key={i} className="ml-4 my-1">{line}</p>;
-                      } else if (line.includes('`') && !line.startsWith('```')) {
-                        const parts = line.split('`');
+                      } else if (line.startsWith("- ")) {
+                        return (
+                          <p key={i} className="ml-4 my-1">
+                            {line}
+                          </p>
+                        );
+                      } else if (
+                        line.includes("`") &&
+                        !line.startsWith("```")
+                      ) {
+                        const parts = line.split("`");
                         return (
                           <p key={i} className="my-1">
-                            {parts.map((part, j) => 
-                              j % 2 === 1 ? <code key={j} className="bg-white/10 px-2 py-0.5 rounded text-blue-300">{part}</code> : part
+                            {parts.map((part, j) =>
+                              j % 2 === 1 ? (
+                                <code
+                                  key={j}
+                                  className="bg-white/10 px-2 py-0.5 rounded text-blue-300"
+                                >
+                                  {part}
+                                </code>
+                              ) : (
+                                part
+                              ),
                             )}
                           </p>
                         );
                       } else if (line.trim()) {
-                        return <p key={i} className="my-1">{line}</p>;
+                        return (
+                          <p key={i} className="my-1">
+                            {line}
+                          </p>
+                        );
                       } else {
                         return <br key={i} />;
                       }

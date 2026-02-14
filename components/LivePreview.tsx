@@ -1,6 +1,6 @@
 "use client";
 
-import * as UILibrary from "@/components/ui-library";
+import * as UILibrary from "./ui-library";
 import { useAppStore } from "@/lib/store";
 import { AlertTriangle, Eye } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -13,10 +13,12 @@ export default function LivePreview() {
 
   useEffect(() => {
     const executeCode = () => {
+      // Clear previous errors immediately when code changes
+      setRenderError(null);
+      setPreviewError(null);
+
       if (!code) {
         setPreviewComponent(null);
-        setPreviewError(null);
-        setRenderError(null);
         return;
       }
 

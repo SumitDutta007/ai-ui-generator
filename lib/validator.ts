@@ -7,6 +7,9 @@ export function validateGeneratedCode(code: string): ValidationResult {
   const warnings: string[] = [];
   const usedComponents: string[] = [];
 
+  console.log("🔍 VALIDATOR: Starting validation...");
+  console.log("📝 Code sample:", code.substring(0, 200));
+
   // 1. Check for prohibited patterns
   if (code.includes("style=")) {
     errors.push("Inline styles are not allowed");
@@ -29,9 +32,32 @@ export function validateGeneratedCode(code: string): ValidationResult {
   }
 
   // 2. Extract used components
-  const componentRegex = /<([A-Z][a-zA-Z]*)/g;
+  // Match both JSX tags: <ComponentName and React.createElement(ComponentName
+  const jsxRegex = /<([A-Z][a-zA-Z]*)/g;
+  const createElementRegex = /React\.createElement\(([A-Z][a-zA-Z]*)/g;
+  const createElementStringRegex =
+    /React\.createElement\(["']([A-Z][a-zA-Z]*)["']/g;
+
   let match;
-  while ((match = componentRegex.exec(code)) !== null) {
+
+  // Find JSX-style components
+  while ((match = jsxRegex.exec(code)) !== null) {
+    const componentName = match[1];
+    if (!usedComponents.includes(componentName)) {
+      usedComponents.push(componentName);
+    }
+  }
+
+  // Find React.createElement-style components (direct reference)
+  while ((match = createElementRegex.exec(code)) !== null) {
+    const componentName = match[1];
+    if (!usedComponents.includes(componentName)) {
+      usedComponents.push(componentName);
+    }
+  }
+
+  // Find React.createElement-style components (string literal)
+  while ((match = createElementStringRegex.exec(code)) !== null) {
     const componentName = match[1];
     if (!usedComponents.includes(componentName)) {
       usedComponents.push(componentName);
@@ -44,6 +70,12 @@ export function validateGeneratedCode(code: string): ValidationResult {
   );
 
   if (invalidComponents.length > 0) {
+    console.log(
+      "🚫 VALIDATION FAILED - Invalid components detected:",
+      invalidComponents,
+    );
+    console.log("📋 Used components:", usedComponents);
+    console.log("✅ Allowed components:", ALLOWED_COMPONENTS);
     errors.push(
       `Unauthorized components used: ${invalidComponents.join(", ")}`,
     );
@@ -89,7 +121,7 @@ export function validateGeneratedCode(code: string): ValidationResult {
     }
   }
 
-  return {
+  const validationResult = {
     valid: errors.length === 0,
     errors,
     warnings,
@@ -97,6 +129,14 @@ export function validateGeneratedCode(code: string): ValidationResult {
       ALLOWED_COMPONENTS.includes(c),
     ),
   };
+
+  console.log("✅ VALIDATOR: Validation complete");
+  console.log("   Valid:", validationResult.valid);
+  console.log("   Errors:", validationResult.errors);
+  console.log("   Warnings:", validationResult.warnings);
+  console.log("   Used components:", validationResult.usedComponents);
+
+  return validationResult;
 }
 
 // Sanitize user input to prevent prompt injection

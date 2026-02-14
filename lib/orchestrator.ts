@@ -23,30 +23,30 @@ function formatValidationError(errors: string[], userIntent: string): string {
     if (error.includes("Inline styles")) {
       errorMessages.push(
         "❌ **Inline Styles Not Allowed**\n\n" +
-        "I cannot create components with inline `style={{...}}` attributes. " +
-        "All styling must use the pre-defined Tailwind classes built into our fixed component library.\n\n" +
-        "💡 **Why?** This ensures visual consistency across all generated UIs."
+          "I cannot create components with inline `style={{...}}` attributes. " +
+          "All styling must use the pre-defined Tailwind classes built into our fixed component library.\n\n" +
+          "💡 **Why?** This ensures visual consistency across all generated UIs.",
       );
     } else if (error.includes("Unauthorized components")) {
       const match = error.match(/Unauthorized components used: (.+)/);
       const components = match ? match[1] : "some components";
       errorMessages.push(
         `❌ **Component Not Available**\n\n` +
-        `I cannot use \`${components}\` because they're not in our fixed component library.\n\n` +
-        `✅ **Available components include:**\n` +
-        `- Layout: Container, Grid, Flex, Card\n` +
-        `- Input: Button, Input, Select, Checkbox\n` +
-        `- Display: Text, Heading, Badge, Alert, Avatar\n` +
-        `- Data: Table, ProgressBar, Stat, Metric\n` +
-        `- Charts: BarChart, LineChart, PieChart, AreaChart\n\n` +
-        `💡 **Try rephrasing:** "${userIntent}" using these components.`
+          `I cannot use \`${components}\` because they're not in our fixed component library.\n\n` +
+          `✅ **Available components include:**\n` +
+          `- Layout: Container, Grid, Flex, Card\n` +
+          `- Input: Button, Input, Select, Checkbox\n` +
+          `- Display: Text, Heading, Badge, Alert, Avatar\n` +
+          `- Data: Table, ProgressBar, Stat, Metric\n` +
+          `- Charts: BarChart, LineChart, PieChart, AreaChart\n\n` +
+          `💡 **Try rephrasing:** "${userIntent}" using these components.`,
       );
     } else if (error.includes("Arbitrary Tailwind")) {
       errorMessages.push(
         "❌ **Custom Tailwind Values Not Allowed**\n\n" +
-        "I cannot use arbitrary Tailwind values like `bg-[#ff0000]` or `text-[20px]`. " +
-        "Only standard Tailwind classes from our component library are permitted.\n\n" +
-        "💡 **Why?** This maintains a consistent design system."
+          "I cannot use arbitrary Tailwind values like `bg-[#ff0000]` or `text-[20px]`. " +
+          "Only standard Tailwind classes from our component library are permitted.\n\n" +
+          "💡 **Why?** This maintains a consistent design system.",
       );
     } else {
       errorMessages.push(`❌ **Validation Error**\n\n${error}`);
@@ -160,8 +160,11 @@ Generate the corrected code now (NO style attributes allowed):`;
     if (!validation.valid) {
       // Instead of throwing, return a user-friendly error that can be displayed in chat
       // Keep the previous working code in preview
-      const userFriendlyError = formatValidationError(validation.errors, userIntent);
-      
+      const userFriendlyError = formatValidationError(
+        validation.errors,
+        userIntent,
+      );
+
       return {
         plan: {
           layout: { type: "error", structure: "Validation failed" },
@@ -222,8 +225,9 @@ Generate the corrected code now (NO style attributes allowed):`;
     console.error("❌ Generation failed:", error);
 
     // Format user-friendly error message
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    const userFriendlyMessage = 
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    const userFriendlyMessage =
       `❌ **Generation Error**\n\n` +
       `I encountered an issue while generating your UI:\n\n` +
       `${errorMessage}\n\n` +
